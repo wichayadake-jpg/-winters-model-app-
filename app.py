@@ -33,13 +33,13 @@ if st.button("คำนวณยอดพยากรณ์", type="primary"):
             alpha_val = 0.9
             
         try:
-            # 4.2 บังคับให้โมเดลใช้ค่า Alpha ของคุณ (ไม่ใช้ Auto)
+            # 4.2 บังคับให้โมเดลใช้ค่า Alpha ของเรา (และให้ระบบหาค่าที่เหลืออัตโนมัติ)
             model = ExponentialSmoothing(
                 ts_data, 
                 trend='add', 
                 seasonal='mul', 
                 seasonal_periods=12
-            ).fit(smoothing_level=alpha_val, optimized=False)
+            ).fit(smoothing_level=alpha_val, optimized=True)
             
             # พยากรณ์ 1 เดือนล่วงหน้า
             forecast = model.forecast(1).iloc[0]
@@ -53,3 +53,4 @@ if st.button("คำนวณยอดพยากรณ์", type="primary"):
             
         except Exception as e:
             st.error(f"เกิดข้อผิดพลาดในการคำนวณ: {e}")
+
