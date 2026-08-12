@@ -23,23 +23,34 @@ current_usage = st.number_input(f"กรอกปริมาณการใช�
 # 4. ปุ่มกดคำนวณและประมวลผล
 if st.button("คำนวณยอดพยากรณ์", type="primary"):
     with st.spinner('กำลังประมวลผลด้วย Winter\'s Model...'):
+        
+        # ถ้าระบบนี้ใช้กรอกเพื่อพยากรณ์ "เดือนถัดไป" จะต้องนำยอดเดือนนี้ไปต่อท้าย
         full_data = historical_data[selected_product] + [current_usage]
         ts_data = pd.Series(full_data)
         
-        # 4.1 ล็อคค่า Alpha ตามที่คุณทดลองมา
-        if selected_product == "น้ำยาล้างรถ (ลิตร)":
-            alpha_val = 0.5
-        else:
+        # 4.1 ล็อคค่าพารามิเตอร์ทั้ง 3 ตัวตามที่ Excel คำนวณไว้
+        if selected_product == "ลงล้อ (ลิตร)":
             alpha_val = 0.9
+            beta_val = 0.99
+            gamma_val = 0.99
+        else:
+            alpha_val = 0.5
+            beta_val = 0.01
+            gamma_val = 0.99
             
         try:
-            # 4.2 บังคับให้โมเดลใช้ค่า Alpha ของเรา (และให้ระบบหาค่าที่เหลืออัตโนมัติ)
+            # 4.2 บังคับให้โมเดลรันตามค่าคงที่ของเรา 100% (optimized=False)
             model = ExponentialSmoothing(
                 ts_data, 
                 trend='add', 
-                seasonal='mul', 
+                seasonal='add', 
                 seasonal_periods=12
-            ).fit(smoothing_level=alpha_val, optimized=True)
+            ).fit(
+                smoothing_level=alpha_val, 
+                smoothing_trend=beta_val, 
+                smoothing_seasonal=gamma_val, 
+                optimized=False
+            )
             
             # พยากรณ์ 1 เดือนล่วงหน้า
             forecast = model.forecast(1).iloc[0]
@@ -48,7 +59,7 @@ if st.button("คำนวณยอดพยากรณ์", type="primary"):
             st.success("✅ คำนวณเสร็จสิ้น!")
             st.metric(label=f"ยอดความต้องการใช้เดือนหน้า ({selected_product})", value=f"{forecast:.2f} ลิตร")
             
-            st.write("📈 กราฟแสดงแนวโน้มการใช้งานรวมเดือนล่าสุด")
+            st.write("📈 กราฟแสดงแนวโน้มการใช้งานรวม")
             st.line_chart(ts_data)
             
         except Exception as e:
