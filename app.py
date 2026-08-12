@@ -23,27 +23,31 @@ current_usage = st.number_input(f"กรอกปริมาณการใช�
 # 4. ปุ่มกดคำนวณและประมวลผล
 if st.button("คำนวณยอดพยากรณ์", type="primary"):
     with st.spinner('กำลังประมวลผลด้วย Winter\'s Model...'):
-        # นำข้อมูลใหม่ไปต่อท้ายข้อมูลอดีต
         full_data = historical_data[selected_product] + [current_usage]
         ts_data = pd.Series(full_data)
         
-        # รันโมเดล Holt-Winters
+        # 4.1 ล็อคค่า Alpha ตามที่คุณทดลองมา
+        if selected_product == "น้ำยาล้างรถ (ลิตร)":
+            alpha_val = 0.5
+        else:
+            alpha_val = 0.9
+            
         try:
+            # 4.2 บังคับให้โมเดลใช้ค่า Alpha ของคุณ (ไม่ใช้ Auto)
             model = ExponentialSmoothing(
                 ts_data, 
                 trend='add', 
                 seasonal='mul', 
                 seasonal_periods=12
-            ).fit(optimized=True)
+            ).fit(smoothing_level=alpha_val, optimized=False)
             
             # พยากรณ์ 1 เดือนล่วงหน้า
             forecast = model.forecast(1).iloc[0]
             
             # แสดงผลลัพธ์
             st.success("✅ คำนวณเสร็จสิ้น!")
-            st.metric(label=f"ปริมาณที่ควรสั่งซื้อในเดือนหน้า ({selected_product})", value=f"{forecast:.2f} ลิตร")
+            st.metric(label=f"ยอดความต้องการใช้เดือนหน้า ({selected_product})", value=f"{forecast:.2f} ลิตร")
             
-            # กราฟแสดงแนวโน้มเล็กน้อยให้ดูเป็นมืออาชีพ
             st.write("📈 กราฟแสดงแนวโน้มการใช้งานรวมเดือนล่าสุด")
             st.line_chart(ts_data)
             
